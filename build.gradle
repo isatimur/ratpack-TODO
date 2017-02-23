@@ -1,0 +1,61 @@
+group 'xyz.isatimur.knowledgebase'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        jcenter()
+
+    }
+    dependencies {
+        classpath 'io.ratpack:ratpack-gradle:1.4.4'
+        classpath 'com.h2database:h2:1.4.186'
+        classpath 'org.jooq:jooq-codegen:3.8.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'io.ratpack.ratpack-java'
+apply plugin: 'idea'
+
+mainClassName = "xyz.isatimur.knowledgebase.ratpack.app.todo.App"
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile ratpack.dependency('hikari')
+    compile 'com.h2database:h2:1.4.186'
+    compile 'org.jooq:jooq-codegen:3.8.1'
+    compile 'org.projectlombok:lombok:1.16.12'
+    compile 'org.projectlombok:lombok-utils:1.16.12'
+    runtime 'org.slf4j:slf4j-simple:1.7.21'
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+
+import org.jooq.util.GenerationTool
+import org.jooq.util.jaxb.*
+
+task jooqCodegen {
+    doLast {
+        String init = "$projectDir/src/main/resources/init.sql".replaceAll('\\\\', '/')
+        Configuration configuration = new Configuration()
+                .withJdbc(new Jdbc()
+                .withDriver("org.h2.Driver")
+                .withUrl("jdbc:h2:mem:todo;INIT=RUNSCRIPT FROM '$init'")
+        )
+                .withGenerator(new Generator()
+                .withDatabase(new Database()
+                .withName("org.jooq.util.h2.H2Database")
+                .withIncludes(".*")
+                .withExcludes("")
+                .withInputSchema("PUBLIC")
+        )
+                .withTarget(new Target()
+                .withDirectory("$projectDir/src/main/java")
+                .withPackageName("jooq")))
+        GenerationTool.generate(configuration)
+    }
+}
